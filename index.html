@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<script type="text/javascript" src="https://d3js.org/d3.v3.js"></script>
+		<link
+			href="https://fonts.googleapis.com/css?family=Lato:400,100,300,400italic,900,700,100italic,300italic,700italic,900italic&subset=latin,latin-ext"
+			rel="stylesheet"
+			type="text/css"
+		/>
+		<link rel="stylesheet" type="text/css" href="main.css" />
+		<title>Voivodeships of Poland</title>
+	</head>
+
+	<body>
+		<div id="wrapper">
+			<div class="text">
+				<h1>Voivodeships of Poland</h1>
+			</div>
+
+			<script type="text/javascript">
+				// http://bl.ocks.org/mbaba/78e2c2295c632a1f0985
+				d3.select("div", "#wrapper").append("div").attr("id", "content");
+
+				var margin = { top: 5, right: 25, bottom: 5, left: 5 };
+
+				var width = 900 - margin.left - margin.right,
+					height = 750 - margin.top - margin.bottom;
+
+				var projection = d3.geo
+					.mercator()
+					.center([20, 51.75])
+					.translate([width / 2, height / 2])
+					.scale(3700);
+
+				var path = d3.geo.path().projection(projection);
+
+				var svg = d3
+					.select("#content")
+					.append("svg")
+					.attr("width", width + margin.left + margin.right)
+					.attr("height", height + margin.top + margin.bottom)
+					.append("g")
+					.attr(
+						"transform",
+						"translate(" + margin.left + "," + margin.top + ")"
+					);
+
+				var formatNumbers = d3.format(",");
+
+				d3.csv("woj_stats.csv", function (data) {
+					d3.json("woj_maps.json", function (json) {
+						for (var i = 0; i < data.length; i++) {
+							var dataWoj = data[i].woj;
+
+							var areaWoj = parseFloat(data[i].area);
+							var populationWoj = parseFloat(data[i].population);
+							var densityWoj = parseFloat(data[i].density);
+
+							for (var j = 0; j < json.features.length; j++) {
+								var jsonWoj = json.features[j].properties.name;
+
+								if (dataWoj == jsonWoj) {
+									json.features[j].properties.area = areaWoj;
+									json.features[j].properties.population = populationWoj;
+									json.features[j].properties.density = densityWoj;
+
+									break;
+								}
+							}
+						}
+
+						var mapWoj = svg
+							.selectAll("g")
+							.data(json.features)
+							.enter()
+							.append("g");
+
+						mapWoj.append("path").attr("d", path).attr("class", "path");
+
+						mapWoj
+							.append("text")
+							.attr("x", 700)
+							.attr("y", 100)
+							.attr("text-anchor", "start")
+							.attr("fill", "none")
+							.text(function (d) {
+								return d.properties.name;
+							})
+							.append("tspan")
+							.attr("x", 700)
+							.attr("dy", 25)
+							.text(function (d) {
+								return "Area: " + formatNumbers(d.properties.area) + " sq. km";
+							})
+							.append("tspan")
+							.attr("x", 700)
+							.attr("dy", 25)
+							.text(function (d) {
+								return "Population: " + formatNumbers(d.properties.population);
+							})
+							.append("tspan")
+							.attr("x", 700)
+							.attr("dy", 25)
+							.text(function (d) {
+								return "Population density: " + d.properties.density;
+							});
+
+						mapWoj.on("mouseover", function () {
+							d3.select(this).classed("hover", true);
+						});
+
+						mapWoj.on("mouseout", function () {
+							d3.select(this).classed("hover", false);
+						});
+					});
+				});
+			</script>
+		</div>
+	</body>
+</html>
